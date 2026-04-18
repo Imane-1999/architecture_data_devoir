@@ -22,7 +22,14 @@ Voici la liste des fichiers csv que nous allons charger:
 * job_industries.json
 * job_postings.csv
 * job_skills.csv
-  
+
+## 1) Créer une base de données
+
+CREATE  DATABASE IF NOT EXISTS  AIRBNB;
+## 2) Créer un schema de données BRONZE
+
+## 3) Créer un stage vers les données sur aws
+
 Pour pouvoir charger les données dans snowflake, il faut:  
    * Créer une base de données airbnb  
    * Créer un schema de données BRONZE  
