@@ -1,16 +1,27 @@
 # 🧊 Projet : Analyse des Offres d'Emploi LinkedIn avec Snowflake:
 
-Cet atelier consiste à manipuler les données des réservations sur Airbnb.  
-Les données sont stockées sur ce bucket: **s3://logbrain-datalake/datasets/airbnb/**  
-Voici la liste des fichiers csv à charger:  
+Chaque jour, des milliers d’entreprises et de particuliers utilisent LinkedIn pour recruter et identifier de nouveaux talents. Dans ce projet, nous allons exploiter un jeu de données composé de plusieurs milliers d’offres d’emploi. Afin de pouvoir analyser ces données, nous commencerons par importer les fichiers aux formats CSV et JSON dans des tables au sein de la base de données Snowflake, ce qui permettra de faciliter leur manipulation et leur exploration.
 
-* hosts.csv  
+## 🎯 Objectif
+Dans le cadre de ce projet, nous exploitons un jeu de données issu de LinkedIn contenant des offres d’emploi.
+Nous utilisons Snowflake pour stocker, organiser et manipuler les données.
+L’analyse est réalisée afin d’identifier des tendances du marché du travail.
+Streamlit est utilisé pour créer une interface interactive de visualisation.
+L’objectif est de transformer les données en informations claires et utiles.
+## 📁 Jeu de Données
+Cet atelier consiste à manipuler les données issu de LinkedIn contenant des offres d’emploi.
+Les fichiers sont disponibles dans le bucket S3 public suivant : **s3://snowflake-lab-bucket/**
 
-* listings.csv  
+Voici la liste des fichiers csv que nous allons charger:  
 
-* reviews.csv  
-
-* seed_full_moon_dates.csv  
+* benefits.csv  
+* companies.json 
+* company_industries.json  
+* company_specialities.json
+* employee_counts.csv
+* job_industries.json
+* job_postings.csv
+* job_skills.csv
   
 Pour pouvoir charger les données dans snowflake, il faut:  
    * Créer une base de données airbnb  
@@ -18,8 +29,6 @@ Pour pouvoir charger les données dans snowflake, il faut:
    * créer un stage vers les données sur aws  
    * créer un file format pour les données CSV et JSON
    * Créer un table pour stocker chaque fichier.  
-
-![alt text](../images/medallion.png)
  
 ## Descriptif des tables:
 
