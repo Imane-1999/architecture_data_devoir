@@ -25,18 +25,51 @@ Voici la liste des fichiers csv que nous allons charger:
 
 ## 1) Créer une base de données
 
-CREATE  DATABASE IF NOT EXISTS  AIRBNB;
+```
+-- Create Databse
+CREATE  DATABASE IF NOT EXISTS  LINKEDIN;
+```
 ## 2) Créer un schema de données BRONZE
+```
+-- Create Schema BRONZE
+CREATE SCHEMA IF NOT EXISTS LINKEDIN.BRONZE;
 
+-- définir le context
+use database LINKEDIN;
+use schema BRONZE;
+```
 ## 3) Créer un stage vers les données sur aws
+```
+--- création du stage
 
-Pour pouvoir charger les données dans snowflake, il faut:  
-   * Créer une base de données airbnb  
-   * Créer un schema de données BRONZE  
-   * créer un stage vers les données sur aws  
-   * créer un file format pour les données CSV et JSON
-   * Créer un table pour stocker chaque fichier.  
- 
+CREATE OR REPLACE STAGE LINKEDIN.BRONZE.linkedin_stage
+URL = 's3://snowflake-lab-bucket/';
+```
+## 4) Création des tables et chargement des données
+
+**Benefits :** 
+
+|Column |                      Description  |
+|--------|-----------------------------------|  
+|job_id	    |The job ID|
+|inferred	|Whether the benefit was explicitly tagged or inferred through text by LinkedIn|
+|type	    |Type of benefit provided (401K, Medical Insurance, etc)|
+
+```
+--- Création de la table benefits
+
+create table if not exists linkedin.bronze.benefits(
+job_id string,
+inferred string, 
+type string
+);
+-- Copy the data into table
+COPY INTO linkedin.bronze.benefits
+FROM @linkedin_stage/benefits.csv
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+-- Check table
+select * from benefits;
+```
 ## Descriptif des tables:
 
 * Table Reviews:  
