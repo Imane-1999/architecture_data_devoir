@@ -70,457 +70,254 @@ FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
 -- Check table
 select * from benefits;
 ```
-## Descriptif des tables:
+**Companies :**
 
-* Table Reviews:  
-  listing_id,  
-  date,  
-  reviewer_name,  
-  comments,  
-  sentiment  
-
-* Table seed_full_moon_date:  
-  full_moon_date  
-
-* Table Listings:  
-  id,  
-  listing_url,  
-  name,  
-  room_type,  
-  minimum_nights,  
-  host_id,  
-  price,  
-  created_at,  
-  updated_at  
-
-
-* Table Hosts:  
-  id,  
-  name,  
-  is_superhost,  
-  created_at,  
-  updated_at  
-
+|Column |                      Description  |
+|--------|-----------------------------------|  
+|company_id	    |The company ID as defined by LinkedIn|
+|name	        |Company name|
+|description	|Company description|
+|company_size	|Company grouping based on number of employees (0 Smallest - 7 Largest)|
+|state	        |State of company headquarters|
+|country	    |Country of company headquarters|
+|city	        |City of company headquarters|
+|zip_code	    |ZIP code of company's headquarters|
+|address	    |Address of company's headquarters|
+|url	        |Link to company's LinkedIn page|
 ```
--- Create Databse
-CREATE  DATABASE IF NOT EXISTS  AIRBNB;
+---Creation de la table "companies"
 
--- Create Schema BRONZE
-CREATE SCHEMA IF NOT EXISTS AIRBNB.BRONZE;
-
-CREATE TABLE IF NOT EXISTS  AIRBNB.BRONZE.HOSTS
-                    (id string,
-                     name string,
-                     is_superhost string,
-                     created_at string,
-                     updated_at string);
-
--- Create Stage                     
-CREATE OR REPLACE STAGE AIRBNB.BRONZE.airbnb_stage
-  URL = 's3://logbrain-datalake/datasets/airbnb/';
-
--- Copy the data into table
-COPY INTO AIRBNB.BRONZE.HOSTS
-FROM @airbnb_stage/hosts.csv
-FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
-
--- Check table
-SELECT * FROM AIRBNB.BRONZE.HOSTS
-
-
--- Create table
-CREATE TABLE IF NOT EXISTS AIRBNB.BRONZE.REVIEWS
-                    (listing_id string,
-                     date string,
-                     reviewer_name string,
-                     comments string,
-                     sentiment string);
-
--- Copy the data into table
-COPY INTO AIRBNB.BRONZE.REVIEWS
-FROM @airbnb_stage/reviews.csv
-FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
-
--- Check table
-select * from AIRBNB.BRONZE.REVIEWS;
-
-
--- Create table
-CREATE TABLE IF NOT EXISTS AIRBNB.BRONZE.LISTINGS
-                    (data VARIANT
-                    );
-
--- Copy the data into table
-COPY INTO AIRBNB.BRONZE.LISTINGS
-FROM @airbnb_stage/listings.json
-FILE_FORMAT = (TYPE = 'JSON');
-
--- Check table
-select * from AIRBNB.BRONZE.LISTINGS;
-
--- Create Schema SILVER
-CREATE SCHEMA IF NOT EXISTS AIRBNB.SILVER;
-
--- Create table 
-CREATE TABLE IF NOT EXISTS AIRBNB.SILVER.HOSTS 
-AS
-SELECT
-    id AS host_id,
-    name AS host_name,
-    is_superhost::BOOLEAN AS is_superhost,
-    created_at,
-    updated_at
-FROM AIRBNB.BRONZE.HOSTS ;
-
--- Check table
-select * from AIRBNB.SILVER.HOSTS;
-
--- Create table 
-CREATE TABLE IF NOT EXISTS AIRBNB.SILVER.REVIEWS  
-AS
-SELECT
-    listing_id,
-    date as review_date,
-    reviewer_name,
-    comments as review_text, -- rename column
-    sentiment
-FROM AIRBNB.BRONZE.REVIEWS;
-
--- Check table
-select * from AIRBNB.SILVER.REVIEWS;
-
-
--- Create table 
-CREATE TABLE IF NOT EXISTS AIRBNB.SILVER.LISTINGS 
-AS
-SELECT
-    data:ID::INT AS id,
-    data:LISTING_URL::STRING AS listing_url,
-    data:NAME::STRING AS name,
-    data:ROOM_TYPE::STRING AS room_type,
-    data:MINIMUM_NIGHTS::INT AS minimum_nights,
-    data:HOST_ID::INT AS host_id,
-    data:PRICE::STRING AS price,
-    data:CREATED_AT::TIMESTAMPTZ AS created_at,
-    data:UPDATED_AT::TIMESTAMPTZ AS updated_at
-FROM AIRBNB.BRONZE.LISTINGS;
-
--- Check table
-select * from AIRBNB.SILVER.LISTINGS;
-
--- Create table
-CREATE TABLE IF NOT EXISTS AIRBNB.SILVER.FULL_MOON_DATE
-(
-    date_day date
+create table if not exists linkedin.bronze.companies_json(
+data variant
 );
 
--- Copy the data into table
-COPY INTO AIRBNB.SILVER.FULL_MOON_DATE
-FROM @AIRBNB.BRONZE.airbnb_stage/seed_full_moon_dates.csv
-FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+COPY INTO linkedin.bronze.companies_json
+FROM @linkedin_stage/companies.json
+FILE_FORMAT = (TYPE = 'JSON' STRIP_OUTER_ARRAY = TRUE);
 
--- Check table
-select * from AIRBNB.SILVER.FULL_MOON_DATE;
-```
-![alt text](../images/data_model_silver.png)
-
-```
--- Create schema Gold
-CREATE SCHEMA AIRBNB.GOLD;
-
--- Create table DIM_HOSTS
-CREATE OR REPLACE VIEW AIRBNB.GOLD.DIM_HOSTS AS
+create table if not exists linkedin.bronze.companies AS
 SELECT
-    host_id::INT AS host_id,
-    NVL(host_name::STRING, 'Anonymous') AS host_name,
-    IS_SUPERHOST::BOOLEAN AS IS_SUPERHOST,
-    CREATED_AT::TIMESTAMPTZ AS CREATED_AT,
-    UPDATED_AT::TIMESTAMPTZ AS UPDATED_AT
-FROM AIRBNB.SILVER.HOSTS;
+    data:company_id::string AS company_id,
+    data:name::string AS name,
+    data:description::string AS description,
+    data:company_size::integer AS company_size,
+    data:state::string AS state,
+    data:country::string AS country,
+    data:city::string AS city,
+    data:zip_code::string AS zip_code,
+    data:address::string AS address,
+    data:url::string AS url
+FROM linkedin.bronze.companies_json;
 
-Select * from AIRBNB.GOLD.DIM_HOSTS;
+select * from companies;
 
+drop table linkedin.bronze.companies_json;
+```
+**Company_industries :**
 
--- Create table DIM_LISTINGS
+|Column |                      Description  |
+|--------|-----------------------------------| 
+|company_id	|The company ID (references companies table and primary key)|
+|industry	|The industry ID |
 
-CREATE OR REPLACE VIEW AIRBNB.GOLD.DIM_LISTINGS AS
+```
+--- Création de la table compnay_industries.json
+
+create table if not exists linkedin.bronze.company_industries_json(
+data variant
+);
+
+COPY INTO linkedin.bronze.company_industries_json
+FROM @linkedin_stage/company_industries.json
+FILE_FORMAT = (TYPE = 'JSON' STRIP_OUTER_ARRAY = TRUE);
+
+create table if not exists linkedin.bronze.company_industries AS
 SELECT
-    ID AS LISTING_ID,
-    LISTING_URL,
-    NAME AS LISTING_NAME,
-    ROOM_TYPE,
-    CASE 
-        WHEN (MINIMUM_NIGHTS)::INT IS NULL THEN 1
-        WHEN (MINIMUM_NIGHTS)::INT = 0 THEN 1 
-        ELSE (MINIMUM_NIGHTS)::INT 
-    END AS MINIMUM_NIGHTS,
-    HOST_ID,
-    TO_NUMBER(REPLACE(PRICE, '$', ''))::INT AS PRICE,
-    CREATED_AT,
-    UPDATED_AT
-FROM AIRBNB.SILVER.LISTINGS;
+    data:company_id::string AS company_id,
+    data:industry::string AS industry,
+FROM linkedin.bronze.company_industries_json;
 
--- Check tables
-Select * from AIRBNB.GOLD.DIM_LISTINGS;
+select *
+from company_industries;
 
--- Create table FACT_REVIEWS
-CREATE OR REPLACE TABLE AIRBNB.GOLD.FACT_REVIEWS
-  AS
-  SELECT 
-    *
-  FROM AIRBNB.SILVER.reviews
-  WHERE review_text IS NOT NULL
-  order by review_date desc;
-
--- Check tables
-Select * from AIRBNB.GOLD.FACT_REVIEWS;
-
-
--- Create data product FULL_MOON_REVIEWS
-
-CREATE OR REPLACE TABLE AIRBNB.GOLD.FULL_MOON_REVIEWS
-AS
-SELECT 
-    fr.*, 
-    CASE 
-        WHEN fm.date_day IS NULL THEN 'not full moon'
-        ELSE 'full moon'
-    END AS is_full_moon
-FROM 
-    AIRBNB.GOLD.FACT_REVIEWS fr 
-LEFT JOIN 
-    AIRBNB.SILVER.FULL_MOON_DATE fm 
-ON 
-    (TO_DATE(fr.REVIEW_DATE) = DATEADD(DAY, 1, fm.date_day));
-
-
--- Check table 
-SELECT * FROM AIRBNB.GOLD.FULL_MOON_REVIEWS;
-
+drop table linkedin.bronze.company_industries_json;
 ```
 
-### Analyse des avis clients
+**Company_specialities :**
 
-**Snowflake Cortex AI** : Snowflake Cortex AI est un service entièrement managé conçu pour exploiter le potentiel de cette technologie auprès de tous les collaborateurs d’une organisation, quels que soient leurs niveaux de compétences techniques. Il donne accès à des modèles de langage de grande taille (LLM) de premier plan, permettant aux utilisateurs de concevoir et de déployer facilement des applications basées sur l’IA.
+|Column |                      Description  |
+|--------|-----------------------------------| 
+|company_id	|The company ID (references companies table and primary key)|
+|speciality	|The speciality name|
+```
+--- Création de la table "company_specialities"
 
-Dans cet exercice, nous explorons Cortex Analyst, l’une des fonctionnalités phares de la famille Snowflake Cortex AI.
+create table if not exists linkedin.bronze.company_specialities_json(
+data variant
+);
 
-**Cortex Analyst :**
-Cortex Analyst permet aux utilisateurs métiers d’interagir avec des données structurées en langage naturel, afin d’obtenir des réponses plus rapidement, d’accéder à des analyses en libre-service et de gagner un temps précieux.
+COPY INTO linkedin.bronze.company_specialities_json
+FROM @linkedin_stage/company_specialities.json
+FILE_FORMAT = (TYPE = 'JSON' STRIP_OUTER_ARRAY = TRUE);
 
-Commençons par un exemple simple utilisant la fonction **TRANSLATE** :
+create table if not exists linkedin.bronze.company_specialities AS
+SELECT
+    data:company_id::string AS company_id,
+    data:speciality::string AS speciality,
+FROM linkedin.bronze.company_specialities_json;
+
+drop table linkedin.bronze.company_specialities_json;
+
+select *
+from company_specialities;
+```
+**Employee_counts :**   
+
+|Column |                      Description  |
+|--------|-----------------------------------|  
+|company_id	The |company ID|
+|employee_count	|Number of employees at company|
+|follower_count	|Number of company followers on LinkedIn|
+|time_recorded	|Unix time of data collection|
+```
+--- Création de table employee_counts
+
+create table if not exists linkedin.bronze.employee_counts(
+company_id string,
+employee_count integer,
+follower_count integer,
+time_recorded string 
+);
+
+COPY INTO linkedin.bronze.employee_counts
+FROM @linkedin_stage/employee_counts.csv
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');;
+
+select *
+from employee_counts;
+```
+**Job_Industries :**  
+
+|Column |                      Description  |
+|--------|-----------------------------------| 
+|job_id	        |The job ID (references jobs table and primary key)|
+|industry_id	|The industry ID |
 
 ```
-select SNOWFLAKE.CORTEX.TRANSLATE('Hello Everyone', '', 'fr') AS greeting;
-```
+-- Création de table job_industries
 
-La colonne REVIEW_TEXT de FACT_REVIEWS contient des avis dans différentes langues. Commençons par les traduire en anglais afin de vérifier si le sentiment correspond bien au contenu de l’avis.
+create table if not exists linkedin.bronze.job_industries_json(
+data variant
+);
 
-* Créez un nouvel entrepôt (Warehouse) avec davantage de ressources de calcul.
+COPY INTO linkedin.bronze.job_industries_json
+FROM @linkedin_stage/job_industries.json
+FILE_FORMAT = (TYPE = 'JSON' STRIP_OUTER_ARRAY = TRUE);
 
-```
-CREATE OR REPLACE WAREHOUSE XLARGE_COMPUTE_WH WITH
-COMMENT = 'Large warehouse for cortex analyst'
-    WAREHOUSE_TYPE = 'standard'
-    WAREHOUSE_SIZE = 'xlarge'
-    MIN_CLUSTER_COUNT = 1
-    MAX_CLUSTER_COUNT = 2
-    SCALING_POLICY = 'standard'
-    AUTO_SUSPEND = 60
-    AUTO_RESUME = true
-    INITIALLY_SUSPENDED = true;
-```
- 
-```
-USE WAREHOUSE XLARGE_COMPUTE_WH;
-```
+create table if not exists linkedin.bronze.job_industries AS
+SELECT
+    data:job_id::string AS job_id,
+    data:industry_id::string AS industry_id,
+FROM linkedin.bronze.job_industries_json;
 
-```
-CREATE OR REPLACE TABLE AIRBNB.GOLD.FULL_MOON_REVIEWS_TRANSLATED AS
-SELECT 
-    LISTING_ID,
-    REVIEW_DATE, 
-    REVIEWER_NAME, 
-    REVIEW_TEXT, 
-    SNOWFLAKE.CORTEX.TRANSLATE(REVIEW_TEXT, '', 'en') AS TRANSLATED_REVIEW_TEXT,
-    SENTIMENT,
-    IS_FULL_MOON  
-    FROM AIRBNB.GOLD.FULL_MOON_REVIEWS
-    LIMIT 100;
-```
+drop table linkedin.bronze.job_industries_json;
 
-* Ensuite, nous utiliserons les modèles pré-entraînés de Snowflake Cortex pour générer des scores de sentiment pour chaque avis.
-
+select *
+from job_industries;
 ```
-CREATE OR REPLACE TABLE AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED AS
-SELECT 
-    LISTING_ID,
-    REVIEW_DATE, 
-    REVIEWER_NAME, 
-    TRANSLATED_REVIEW_TEXT,
-    SENTIMENT,
-    SNOWFLAKE.CORTEX.SENTIMENT(TRANSLATED_REVIEW_TEXT) AS SENTIMENT_GENERATED,
-    IS_FULL_MOON  
-    FROM AIRBNB.GOLD.FULL_MOON_REVIEWS_TRANSLATED;
-```
+**Jobs_posting :** 
 
-* Les scores de sentiment vont de -1 (totalement négatif) à 1 (totalement positif). Nous les classerons en trois catégories : négatif (-1 à -0,3), neutre (-0,3 à 0,3) et positif (0,3 à 1).
+|Column |                      Description  |
+|--------|-----------------------------------|  
+|job_id                    | The job ID as defined by LinkedIn (https://www.linkedin.com/jobs/view/{job_id})|
+|company_name               | nmae for the company associated with the job posting (maps to companies.csv)  |
+|title	                   | Job title  |
+|description	           |     Job description  |
+|max_salary	               | Maximum salary  |
+|med_salary	               | Medium salary  |
+|min_salary	               | Minimum salary  |
+|pay_period	               | Pay period for salary (Hourly, Monthly, Yearly)  |
+|formatted_work_type	   |     Type of work (Fulltime, Parttime, Contract)  |
+|location	               | Job location  |
+|applies	               |     Number of applications that have been submitted  |
+|original_listed_time	   | Original time the job was listed  |
+|remote_allowed	           | Whether job permits remote work  |
+|views	                   | Number of times the job posting has been viewed  |
+|job_posting_url	       |     URL to the job posting on a platform  |
+|application_url	       |     URL where applications can be submitted |  
+|application_type	       | Type of application process (offsite, complex/simple onsite)  |
+|expiry	                   | Expiration date or time for the job listing  |
+|closed_time	           |     Time to close job listing  |
+|formatted_experience_level | job experience level (entry, associate, executive, etc)  |
+|skills_desc	           |    Description detailing required skills for job  |
+|listed_time	           |   Time when the job was listed  |
+|posting_domain	           | Domain of the website with application  |
+|sponsored	               |Whether the job listing is sponsored or promoted  |
+|work_type	               | Type of work associated with the job  |
+|currency	               | Currency in which the salary is provided  |
+|compensation_type	       | Type of compensation for the job  |
 
 ```
-select min(SENTIMENT_GENERATED), max(SENTIMENT_GENERATED) from AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED;
-```
+--- Création de la table job_postings
 
+create table if not exists linkedin.bronze.job_postings(
+job_id string,
+company_name string,
+title string,
+description string,
+max_salary integer,
+med_salart integer,
+min_salary integer,
+pay_period string,
+formatted_work_type string,
+location string,
+applies integer,
+original_listed_time string,
+remote_allowed string,
+views integer,
+job_posting_url string,
+application_url string,
+application_type string,
+expiry string,
+close_time string,
+formatted_experience_level string,
+skills_desc string,
+listed_time string,
+posting_domain string,
+sponsored string,
+work_type string,
+currency string,
+compensation_type string
+);
 
-```
-CREATE OR REPLACE TABLE AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED AS
-SELECT 
-    LISTING_ID,
-    REVIEW_DATE, 
-    REVIEWER_NAME, 
-    TRANSLATED_REVIEW_TEXT,
-    SENTIMENT,
-    CASE 
-        WHEN SNOWFLAKE.CORTEX.SENTIMENT(TRANSLATED_REVIEW_TEXT) < -0.3 THEN 'negative'
-     
-        WHEN SNOWFLAKE.CORTEX.SENTIMENT(TRANSLATED_REVIEW_TEXT) BETWEEN -0.3 AND 0.3  THEN 'neutral'
-     
-        WHEN SNOWFLAKE.CORTEX.SENTIMENT(TRANSLATED_REVIEW_TEXT) > 0.3 THEN 'positive'
-    END AS  SENTIMENT_GENERATED,
-    IS_FULL_MOON  
-    FROM AIRBNB.GOLD.FULL_MOON_REVIEWS_TRANSLATED;
-```
+COPY INTO linkedin.bronze.job_postings
+FROM @linkedin_stage/job_postings.csv
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');;
 
-* Interrogez la table `FULL_MOON_REVIEWS_AUGMENTED`.
-
-```
-SELECT * FROM AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED
-```
-
-* Dans les exemples suivants, nous montrerons comment exploiter les fonctions `EXTRACT_ANSWER` et `SUMMARIZE` afin d’obtenir davantage d’informations et d’analyses à partir de nos données.
-
-* EXTRACT_ANSWER:
-
-```
-select TRANSLATED_REVIEW_TEXT,SENTIMENT_GENERATED, SNOWFLAKE.CORTEX.EXTRACT_ANSWER(TRANSLATED_REVIEW_TEXT, 'Were the guests satisfied with their stay?') as extract_answer from AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED limit 100;
-```
-
-* SUMMARIZE:
-
-```
-select TRANSLATED_REVIEW_TEXT, SNOWFLAKE.CORTEX.SUMMARIZE(TRANSLATED_REVIEW_TEXT) as Summary from AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED limit 100;
-```
-
-## Créer des applications web de données :
-Streamlit est une bibliothèque Python open source qui facilite la création et le partage d’applications web personnalisées pour l’analytique et la data science.
-
-Nous allons commencer par développer notre première application web à partir de données Airbnb.
+select *
+from job_postings;
 
 ```
-import streamlit as st
-from snowflake.snowpark.context import get_active_session
+**Job_Skills :**
 
-
-st.title(f"AIRBNB Web App")
-st.write(
-  """This is our first Streamlit web app 
-     application baseb on AIRBNB data!
-  """
-)
-
-# Get connection
-session = get_active_session()
-
-# execute sql statement
-sql = f"select count(*) as NB_LISTINGS, SENTIMENT_GENERATED from  AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED group by SENTIMENT_GENERATED order by NB_LISTINGS asc;"
-
-data = session.sql(sql).collect()
-
-# Create a simple bar chart
-
-st.subheader("Sentiment-Based Distribution of Listings")
-st.bar_chart(data=data, x="SENTIMENT_GENERATED", y="NB_LISTINGS", color="SENTIMENT_GENERATED")
-
-st.subheader("Underlying data")
-st.dataframe(data, use_container_width=True)
+|Column |                      Description  |
+|--------|-----------------------------------| 
+|job_id	    |The job ID (references jobs table and primary key)|
+|skill_abr	|The skill abbreviation|
 
 ```
+--- Création de la table job_skills
 
-![alt text](../images/img33.png)
+create table if not exists linkedin.bronze.job_skills(
+job_id string,
+skill_abr string
+);
 
+COPY INTO linkedin.bronze.job_skills
+FROM @linkedin_stage/job_skills.csv
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');;
 
-* Ensuite, nous améliorerons le diagramme en barres en y ajoutant des filtres interactifs pour offrir une expérience utilisateur plus dynamique.
-
-```
-import streamlit as st
-from snowflake.snowpark.context import get_active_session
-
-
-st.title(f"AIRBNB Web App")
-st.write(
-  """This is our first Streamlit web app 
-     application baseb on AIRBNB data!
-  """
-)
-
-# Get connection
-session = get_active_session()
-
-# Create a select box
-option = st.selectbox(
-     'Select the Review Name?',
-( 'Michael','Daniel','Thomas','David','Anna','Laura','Alexander','Julia','Maria','Martin','Andrea','Sarah','Christian','Lisa','Alex','Simon','Mark','Chris','Paul','Stefan','Nicole','Robert'))
-
-# execute sql statement
-sql = f"select count(*) as NB_LISTINGS, SENTIMENT_GENERATED from  AIRBNB.GOLD.FULL_MOON_REVIEWS_AUGMENTED  where reviewer_name= '{option}'group by SENTIMENT_GENERATED order by NB_LISTINGS asc;"
-
-data = session.sql(sql).collect()
-
-# Create a simple bar chart
-
-st.subheader("Sentiment-Based Distribution of Listings")
-st.bar_chart(data=data, x="SENTIMENT_GENERATED", y="NB_LISTINGS", color="SENTIMENT_GENERATED")
-
-st.subheader("Underlying data")
-st.dataframe(data, use_container_width=True)
-
-```
-
-![alt text](../images/img34.png)
-
-## Réinitialisez votre compte Snowflake.
-Exécutez les scripts ci-dessous pour rétablir votre compte dans l’état requis afin de relancer cet atelier.
-
-```
-USE ROLE ACCOUNTADMIN;
-
-USE DATABASE AIRBNB;
-
-USE SCHEMA SILVER;
-
-DROP TABLE IF EXISTS HOSTS;
-
-DROP TABLE IF EXISTS LISTINGS; 
-
-DROP TABLE IF EXISTS REVIEWS; 
-
-DROP TABLE IF EXISTS FULL_MOON_DATE; 
-
-USE SCHEMA GOLD;
-
-DROP VIEW IF EXISTS DIM_HOSTS;
-
-DROP VIEW IF EXISTS DIML_ISTINGS; 
-
-DROP TABLE IF EXISTS FACT_REVIEWS; 
-
-DROP TABLE IF EXISTS FULL_MOON_REVIEWS;
-
-DROP TABLE IF EXISTS FULL_MOON_REVIEWS_TRANSLATED;
-
-DROP TABLE IF EXISTS FULL_MOON_REVIEWS_AUGMENTED;
-
-DROP DATABASE IF EXISTS AIRBNB;
-
-DROP WAREHOUSE IF EXISTS XLARGE_COMPUTE_WH;
+select *
+from job_skills;
 
 ```
