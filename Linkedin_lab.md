@@ -31,10 +31,13 @@ CREATE  DATABASE IF NOT EXISTS  LINKEDIN;
 ```
 ## 2) Créer un schema de données BRONZE
 ```
+
 -- Create Schema BRONZE
+
 CREATE SCHEMA IF NOT EXISTS LINKEDIN.BRONZE;
 
 -- définir le context
+
 use database LINKEDIN;
 use schema BRONZE;
 ```
@@ -55,7 +58,9 @@ URL = 's3://snowflake-lab-bucket/';
 |inferred	|Whether the benefit was explicitly tagged or inferred through text by LinkedIn|
 |type	    |Type of benefit provided (401K, Medical Insurance, etc)|
 
+
 ```
+
 --- Création de la table benefits
 
 create table if not exists linkedin.bronze.benefits(
@@ -63,10 +68,13 @@ job_id string,
 inferred string, 
 type string
 );
+
 -- Copy the data into table
+
 COPY INTO linkedin.bronze.benefits
 FROM @linkedin_stage/benefits.csv
 FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+
 -- Check table
 select * from benefits;
 ```
@@ -84,7 +92,9 @@ select * from benefits;
 |zip_code	    |ZIP code of company's headquarters|
 |address	    |Address of company's headquarters|
 |url	        |Link to company's LinkedIn page|
+
 ```
+
 ---Creation de la table "companies"
 
 create table if not exists linkedin.bronze.companies_json(
@@ -137,8 +147,7 @@ SELECT
     data:industry::string AS industry,
 FROM linkedin.bronze.company_industries_json;
 
-select *
-from company_industries;
+select * from company_industries;
 
 drop table linkedin.bronze.company_industries_json;
 ```
@@ -149,6 +158,7 @@ drop table linkedin.bronze.company_industries_json;
 |--------|-----------------------------------| 
 |company_id	|The company ID (references companies table and primary key)|
 |speciality	|The speciality name|
+
 ```
 --- Création de la table "company_specialities"
 
@@ -179,6 +189,7 @@ from company_specialities;
 |employee_count	|Number of employees at company|
 |follower_count	|Number of company followers on LinkedIn|
 |time_recorded	|Unix time of data collection|
+
 ```
 --- Création de table employee_counts
 
@@ -222,8 +233,7 @@ FROM linkedin.bronze.job_industries_json;
 
 drop table linkedin.bronze.job_industries_json;
 
-select *
-from job_industries;
+select * from job_industries;
 ```
 **Jobs_posting :** 
 
@@ -294,8 +304,7 @@ COPY INTO linkedin.bronze.job_postings
 FROM @linkedin_stage/job_postings.csv
 FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');;
 
-select *
-from job_postings;
+select * from job_postings;
 
 ```
 **Job_Skills :**
@@ -317,7 +326,6 @@ COPY INTO linkedin.bronze.job_skills
 FROM @linkedin_stage/job_skills.csv
 FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"');;
 
-select *
-from job_skills;
+select * from job_skills;
 
 ```
