@@ -3,7 +3,7 @@
 Chaque jour, des milliers d’entreprises et de particuliers utilisent LinkedIn pour recruter et identifier de nouveaux talents. Dans ce projet, nous allons exploiter un jeu de données composé de plusieurs milliers d’offres d’emploi. Afin de pouvoir analyser ces données, nous commencerons par importer les fichiers aux formats CSV et JSON dans des tables au sein de la base de données Snowflake, ce qui permettra de faciliter leur manipulation et leur exploration.
 
 ## 🎯 Objectif
-Dans le cadre de ce projet, nous exploitons un jeu de données issu de LinkedIn contenant des offres d’emploi.
+> Dans le cadre de ce projet, nous exploitons un jeu de données issu de LinkedIn contenant des offres d’emploi.
 Nous utilisons Snowflake pour stocker, organiser et manipuler les données.
 L’analyse est réalisée afin d’identifier des tendances du marché du travail.
 Streamlit est utilisé pour créer une interface interactive de visualisation.
