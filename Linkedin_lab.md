@@ -1,4 +1,4 @@
-# Airbnb use case:
+# 🧊 Projet : Analyse des Offres d'Emploi LinkedIn avec Snowflake:
 
 Cet atelier consiste à manipuler les données des réservations sur Airbnb.  
 Les données sont stockées sur ce bucket: **s3://logbrain-datalake/datasets/airbnb/**  
