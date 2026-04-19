@@ -1,16 +1,17 @@
 create schema if not exists linkedin.gold;
 
 -------------------------------------------------------------------------------------
-create table if not exists linkedin.gold.fact_job_analysis_by_industry as (
+create or replace table linkedin.gold.fact_job_analysis_by_industry as (
 select 
 jp.title,
-ji.industry_id,
+ci.industry,
 count(jp.job_id) as total_postings,
 max(jp.max_salary) as peak_salary,
 avg(jp.max_salary) as avg_max_salary
 from linkedin.silver.job_postings jp
-join linkedin.silver.job_industries ji on jp.job_id = ji.job_id
-group by jp.title, ji.industry_id
+left join linkedin.silver.company_industries ci
+on jp.company_id = ci.company_id
+group by jp.title, ci.industry
 );
 
 -------------------------------------------------------------------------------------
@@ -26,13 +27,13 @@ order by c.company_size
 );
 
 -------------------------------------------------------------------------------------
-create table if not exists linkedin.gold.fact_postings_by_industry as (
+create or replace table linkedin.gold.fact_postings_by_industry as (
 select 
-ji.industry_id,
+ci.industry,
 count(jp.job_id) as total_offers
 from linkedin.silver.job_postings jp
-join linkedin.silver.job_industries ji on jp.job_id = ji.job_id
-group by ji.industry_id
+join linkedin.silver.company_industries ci on jp.company_id = ci.company_id
+group by ci.industry
 order by total_offers desc
 );
 
